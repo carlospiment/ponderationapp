@@ -1,0 +1,316 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { Plus, Trash2, AlertCircle, CheckCircle2, Info, Calculator, GraduationCap } from 'lucide-react';
+
+const App = () => {
+  const [activities, setActivities] = useState([
+    { id: 1, name: 'Examen Parcial 1', obtained: 80, max: 100, weight: 30 },
+    { id: 2, name: 'Taller Grupal', obtained: 15, max: 20, weight: 20 },
+    { id: 3, name: 'Proyecto Final', obtained: 45, max: 50, weight: 50 }
+  ]);
+
+  const [isAdding, setIsAdding] = useState(false);
+  const [newActivity, setNewActivity] = useState({ name: '', obtained: '', max: '', weight: '' });
+
+  // Cálculos de métricas
+  const totals = useMemo(() => {
+    let totalWeight = 0;
+    let weightedScore = 0;
+
+    activities.forEach(act => {
+      const score = act.max > 0 ? (act.obtained / act.max) : 0;
+      weightedScore += score * act.weight;
+      totalWeight += act.weight;
+    });
+
+    const isComplete = Math.abs(totalWeight - 100) < 0.01;
+    const finalScore = isComplete ? (weightedScore / 100) * 4 + 1 : null;
+
+    return { totalWeight, weightedScore, isComplete, finalScore };
+  }, [activities]);
+
+  const handleAdd = (e) => {
+    e.preventDefault();
+    if (!newActivity.name || !newActivity.max || !newActivity.weight) return;
+
+    const activity = {
+      id: Date.now(),
+      name: newActivity.name,
+      obtained: parseFloat(newActivity.obtained) || 0,
+      max: parseFloat(newActivity.max),
+      weight: parseFloat(newActivity.weight)
+    };
+
+    setActivities([...activities, activity]);
+    setNewActivity({ name: '', obtained: '', max: '', weight: '' });
+    setIsAdding(false);
+  };
+
+  const handleUpdate = (id, field, value) => {
+    setActivities(activities.map(act => 
+      act.id === id ? { ...act, [field]: value } : act
+    ));
+  };
+
+  const removeActivity = (id) => {
+    setActivities(activities.filter(act => act.id !== id));
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 p-4 md:p-8 font-sans text-slate-900">
+      <div className="max-w-5xl mx-auto">
+        {/* Header */}
+        <header className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+          <div>
+            <h1 className="text-3xl font-extrabold text-indigo-700 flex items-center gap-2">
+              <GraduationCap className="w-8 h-8" />
+              Gestor de Notas Educativo
+            </h1>
+            <p className="text-slate-500">Calcula tu rendimiento académico con ponderación precisa.</p>
+          </div>
+          <div className="flex gap-2">
+            <button 
+              onClick={() => setIsAdding(true)}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all shadow-md active:scale-95"
+            >
+              <Plus size={20} /> Nueva Actividad
+            </button>
+          </div>
+        </header>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main Content: Table */}
+          <div className="lg:col-span-2 space-y-4">
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead className="bg-slate-50 border-bottom border-slate-200 text-slate-600 text-sm uppercase">
+                    <tr>
+                      <th className="p-4 font-semibold">Actividad</th>
+                      <th className="p-4 font-semibold w-24 text-center">Pts. Obt</th>
+                      <th className="p-4 font-semibold w-24 text-center">Pts. Max</th>
+                      <th className="p-4 font-semibold w-24 text-center">Peso (%)</th>
+                      <th className="p-4 font-semibold w-12"></th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {activities.map((act) => (
+                      <tr key={act.id} className="hover:bg-indigo-50/30 transition-colors group">
+                        <td className="p-3">
+                          <input 
+                            type="text" 
+                            value={act.name}
+                            onChange={(e) => handleUpdate(act.id, 'name', e.target.value)}
+                            className="w-full bg-transparent focus:bg-white focus:ring-2 focus:ring-indigo-200 rounded px-2 py-1 outline-none font-medium"
+                          />
+                        </td>
+                        <td className="p-3">
+                          <input 
+                            type="number" 
+                            value={act.obtained}
+                            onChange={(e) => handleUpdate(act.id, 'obtained', parseFloat(e.target.value) || 0)}
+                            className="w-full text-center bg-transparent focus:bg-white focus:ring-2 focus:ring-indigo-200 rounded px-2 py-1 outline-none"
+                          />
+                        </td>
+                        <td className="p-3">
+                          <input 
+                            type="number" 
+                            value={act.max}
+                            onChange={(e) => handleUpdate(act.id, 'max', parseFloat(e.target.value) || 0)}
+                            className="w-full text-center bg-transparent focus:bg-white focus:ring-2 focus:ring-indigo-200 rounded px-2 py-1 outline-none"
+                          />
+                        </td>
+                        <td className="p-3">
+                          <input 
+                            type="number" 
+                            value={act.weight}
+                            onChange={(e) => handleUpdate(act.id, 'weight', parseFloat(e.target.value) || 0)}
+                            className="w-full text-center bg-transparent focus:bg-white focus:ring-2 focus:ring-indigo-200 rounded px-2 py-1 outline-none font-bold text-indigo-600"
+                          />
+                        </td>
+                        <td className="p-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button 
+                            onClick={() => removeActivity(act.id)}
+                            className="text-rose-400 hover:text-rose-600 p-1"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                    {activities.length === 0 && (
+                      <tr>
+                        <td colSpan="5" className="p-8 text-center text-slate-400">
+                          No hay actividades. ¡Agrega una para comenzar!
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Validation Warnings */}
+            {!totals.isComplete && activities.length > 0 && (
+              <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl flex items-start gap-3 text-amber-800 animate-pulse">
+                <AlertCircle className="shrink-0 mt-1" />
+                <div>
+                  <p className="font-bold">Suma de pesos incorrecta</p>
+                  <p className="text-sm">La suma actual es de <span className="font-mono font-black">{totals.totalWeight}%</span>. Debe ser exactamente 100% para validar la nota final.</p>
+                </div>
+              </div>
+            )}
+            
+            {totals.isComplete && (
+               <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-xl flex items-start gap-3 text-emerald-800">
+                <CheckCircle2 className="shrink-0 mt-1" />
+                <div>
+                  <p className="font-bold">Distribución válida</p>
+                  <p className="text-sm">Los pesos suman el 100%. El cálculo de la calificación es preciso.</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Sidebar: Results & Summary */}
+          <aside className="space-y-6">
+            <div className="bg-indigo-700 text-white rounded-2xl p-6 shadow-xl shadow-indigo-200 relative overflow-hidden">
+              <div className="relative z-10">
+                <h2 className="text-indigo-100 uppercase text-xs font-bold tracking-widest mb-1">Calificación Final</h2>
+                {totals.isComplete ? (
+                  <div className="flex items-end gap-2">
+                    <span className="text-6xl font-black">{totals.finalScore.toFixed(2)}</span>
+                    <span className="text-indigo-300 text-lg mb-2">/ 5.00</span>
+                  </div>
+                ) : (
+                  <div className="py-4">
+                    <span className="text-3xl font-bold text-indigo-200 italic">Pendiente...</span>
+                  </div>
+                )}
+                
+                <div className="mt-4 pt-4 border-t border-indigo-600/50">
+                  <div className="flex justify-between text-sm">
+                    <span>Global Ponderado:</span>
+                    <span className="font-mono">{totals.weightedScore.toFixed(1)}%</span>
+                  </div>
+                </div>
+              </div>
+              {/* Decorative Circle */}
+              <div className="absolute -bottom-8 -right-8 w-32 h-32 bg-white/10 rounded-full"></div>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+              <h3 className="text-slate-700 font-bold mb-4 flex items-center gap-2">
+                <Calculator size={18} className="text-indigo-500" />
+                Resumen de Rendimiento
+              </h3>
+              <div className="space-y-3">
+                {activities.map(act => {
+                  const percent = act.max > 0 ? (act.obtained / act.max) * 100 : 0;
+                  return (
+                    <div key={act.id} className="text-sm">
+                      <div className="flex justify-between mb-1">
+                        <span className="text-slate-600 truncate max-w-[150px]">{act.name}</span>
+                        <span className="font-medium">{percent.toFixed(0)}%</span>
+                      </div>
+                      <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full transition-all duration-500 ${percent >= 60 ? 'bg-emerald-500' : 'bg-rose-500'}`}
+                          style={{ width: `${percent}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="bg-slate-100 rounded-xl p-4 text-xs text-slate-500 flex gap-2">
+              <Info size={16} className="shrink-0" />
+              <p>Fórmula aplicada: <code>(Porcentaje Global / 100) * 4 + 1</code>. Asegúrate de que los puntos obtenidos no superen los máximos para resultados coherentes.</p>
+            </div>
+          </aside>
+        </div>
+      </div>
+
+      {/* Modal / Overlay for adding new activity */}
+      {isAdding && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all">
+            <div className="p-6 bg-indigo-50 border-b border-indigo-100">
+              <h3 className="text-xl font-bold text-indigo-900">Nueva Actividad</h3>
+              <p className="text-sm text-indigo-600">Completa los datos para el registro.</p>
+            </div>
+            <form onSubmit={handleAdd} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Nombre</label>
+                <input 
+                  autoFocus
+                  required
+                  placeholder="Ej: Quiz 1"
+                  className="w-full border border-slate-300 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  value={newActivity.name}
+                  onChange={e => setNewActivity({...newActivity, name: e.target.value})}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1">Puntos Obtenidos</label>
+                  <input 
+                    type="number"
+                    step="0.1"
+                    required
+                    placeholder="0"
+                    className="w-full border border-slate-300 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    value={newActivity.obtained}
+                    onChange={e => setNewActivity({...newActivity, obtained: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1">Puntos Máximos</label>
+                  <input 
+                    type="number"
+                    step="0.1"
+                    required
+                    placeholder="100"
+                    className="w-full border border-slate-300 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    value={newActivity.max}
+                    onChange={e => setNewActivity({...newActivity, max: e.target.value})}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Peso de la nota (%)</label>
+                <input 
+                  type="number"
+                  step="0.1"
+                  required
+                  placeholder="Ej: 25"
+                  className="w-full border border-slate-300 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  value={newActivity.weight}
+                  onChange={e => setNewActivity({...newActivity, weight: e.target.value})}
+                />
+              </div>
+              <div className="flex gap-3 pt-4 border-t mt-6">
+                <button 
+                  type="button"
+                  onClick={() => setIsAdding(false)}
+                  className="flex-1 px-4 py-2 border border-slate-300 text-slate-600 rounded-lg hover:bg-slate-50 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 shadow-md shadow-indigo-100 transition-all"
+                >
+                  Añadir
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default App;
